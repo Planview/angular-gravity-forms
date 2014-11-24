@@ -91,7 +91,13 @@ class Angular_Gravity_Forms_Public {
         $this->submit_form();
     }
 
+    /**
+     * Process an ajax form submission
+     *
+     * @since   0.0.0
+     */
     public function submit_form() {
+        error_log(var_export($_REQUEST,true));
         $data = $this->prepare_form_data();
         $lead_id = GFAPI::add_entry( $data );
         $lead = RGFormsModel::get_lead( $lead_id );
@@ -123,18 +129,22 @@ class Angular_Gravity_Forms_Public {
     protected function prepare_form_data() {
         $cleaned_fields = array();
 
-        foreach ( $this->form as $field ) {
+        foreach ( $this->form['fields'] as $field ) {
             if ( 'checkbox' === $field['type'] ) {
-                foreach ( $field['inputs'] as $input ) {
-                    $id = sprintf('%.01F', $field['id']);
-                    if ( $this->check_array_property( $id, $_REQUEST ) ) {
-                        $cleaned_fields[ $id ] = '1';
+                $inputs = $field['inputs'];
+                $choices = $field['choices'];
+                for ( $i=0; $i < count( $inputs ); $i+= 1 ) {
+                    $id = sprintf( '%.01F', $inputs[ $i ]['id'] );
+                    $request_id = 'input_' . str_replace( '.', '_', $id );
+                    if ( $this->check_array_property( $request_id, $_REQUEST ) ) {
+                        $cleaned_fields[ $id ] = $choices[ $i ]['value'];
                     }
                 }
             } else {
                 $clean = $this->clean_field( $field );
+                error_log(var_export($clean, true));
                 if ( $clean ) {
-                    $cleaned_fields[] = $clean;
+                    $cleaned_fields[ $field['id'] ] = $clean;
                 } elseif ( $this->check_array_property( 'isRequired', $field ) ) {
                     return $this->send_json_response(
                         array( 'success' => false ),
@@ -144,6 +154,8 @@ class Angular_Gravity_Forms_Public {
             }
         }
 
+        error_log(var_export($cleaned_fields, true));
+
         $cleaned_fields['form_id'] = $this->form['id'];
         $cleaned_fields['date_created'] = date('Y-m-d H:i');
 
@@ -152,15 +164,21 @@ class Angular_Gravity_Forms_Public {
 
     /**
      * Sanitize the form fields
+     *
+     * @since   0.0.0
+     * @param   array   $field  The meta data for the field
+     * @return  string|null     The sanitized data for the field
      */
     protected function clean_field( $field ) {
         if ( ! in_array( $field['type'], array(
             'text', 'textarea', 'hidden', 'email', 'number', 'select',
             'multiselect', 'radio', 'checkbox' ) ) ) return null;
 
-        if ( ! isset( $_REQUEST[ $field['id'] ] ) ) return null;
+        $id = "input_{$field['id']}";
 
-        $value = $_REQUEST[ $field['id'] ];
+        if ( ! isset( $_REQUEST[ $id ] ) ) return null;
+
+        $value = $_REQUEST[ $id ];
 
         switch ( $field['type'] ) {
             case 'email':
@@ -173,7 +191,7 @@ class Angular_Gravity_Forms_Public {
             case 'select':
             case 'radio':
                 foreach ( $field['choices'] as $choice ) {
-                    if ( $value === $choice ) return $value;
+                    if ( $value === $choice['value'] ) return $value;
                 }
                 return null;
 
@@ -181,10 +199,10 @@ class Angular_Gravity_Forms_Public {
                 $matched = array();
 
                 foreach ( $field['choices'] as $choice ) {
-                    if ( in_array($choice, $value) ) $matched[] = $choice;
+                    if ( in_array( $choice['value'], $value ) ) $matched[] = $choice['value'];
                 }
 
-                if ( ! empty( $matched ) ) return $matched;
+                if ( ! empty( $matched ) ) return implode( ', ', $matched );
                 return null;
 
             case 'textarea':
@@ -237,7 +255,7 @@ class Angular_Gravity_Forms_Public {
     private function send_json_response( $message, $status = '200 OK' ) {
         header("Status: $status");
         header('Content-Type: application/json');
-        echo json_encode($response);
+        echo json_encode($message);
         die();
     }
 

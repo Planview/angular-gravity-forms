@@ -173,11 +173,15 @@ class Angular_Gravity_Forms_Shortcode {
 
     /**
      * Compile the template
+     *
+     * @since   0.0.0
      */
     private function compile_template() {
         $template = $this->get_config( 'template' );
 
-        if ( file_exists( basename( __FILE__ ) . "/partials/$template.php") ) {
+        if ( file_exists( get_stylesheet_directory() . "/angular-gravityforms-$template.php" ) ) {
+            $this->compile_from_theme_file( $template );
+        } elseif ( file_exists( basename( __FILE__ ) . "/partials/$template.php" ) ) {
             $this->compile_from_file( $template );
         } else {
             $this->compile_from_file( 'default' );
@@ -186,10 +190,30 @@ class Angular_Gravity_Forms_Shortcode {
 
     /**
      * Compile template from file
+     *
+     * @since   0.0.0
+     * @param   string  $template_name  The name of the template file to use
      */
     private function compile_from_file( $template_name ) {
         $compiled = '';
         $file_name = dirname( __FILE__ ) . "/partials/$template_name.php";
+
+        ob_start();
+        include $file_name;
+        $compiled = ob_get_clean();
+
+        $this->template = $compiled;
+    }
+
+    /**
+     * Compile template from a file in the active theme
+     *
+     * @since   0.0.0
+     * @param   string  $template_name  The name of the template file to use
+     */
+    private function compile_from_theme_file( $template_name ) {
+        $compiled = '';
+        $file_name = get_stylesheet_directory() . "/angular-gravityforms-$template_name.php";
 
         ob_start();
         include $file_name;
@@ -387,7 +411,7 @@ class Angular_Gravity_Forms_Shortcode {
                         $id = str_replace('.', '_', $id);
                         $template[] = sprintf(
                             '<label><input type="checkbox" value="%s" id="%s"' .
-                                ' data-ng-model="formData[\'%.01F\']" name="%s"%s%s /> %s</label>',
+                                ' data-ng-model="formData[\'input_%.01F\']" name="%s"%s%s /> %s</label>',
                             esc_attr( $choices[ $i ]['value'] ),
                             $id,
                             $inputs[ $i ]['id'],
@@ -428,7 +452,7 @@ class Angular_Gravity_Forms_Shortcode {
      */
     private function get_field_attributes( $field, $with_id = true ) {
         $attributes = '';
-        $attributes .= "data-ng-model=\"formData['{$field['id']}']\" ";
+        $attributes .= "data-ng-model=\"formData.input_{$field['id']}\" ";
         $attributes .= "name=\"{$this->get_field_id( $field )}\" ";
 
         if ( $with_id ) {
@@ -450,6 +474,10 @@ class Angular_Gravity_Forms_Shortcode {
 
     /**
      * Return the HTML id for a field
+     *
+     * @since   0.0.0
+     * @param   array   $field  The array of field meta data
+     * @return  string  The unique identifier string for a field
      */
     private function get_field_id( $field ) {
         return "input_{$this->id}_{$field['id']}";
