@@ -114,6 +114,7 @@ class Angular_Gravity_Forms_Public {
     public function ajax_setup() {
         if ( ! defined( 'DOING_AJAX' ) || ! DOING_AJAX ) return;
         if ( ! class_exists( 'GFAPI' ) ) throw new Exception("Gravity Forms is not loaded", 1);
+        if ( ! isset( $_REQUEST['action'] ) || $_REQUEST['action'] !== "{$this->plugin_name}_submit") return;
 
         $form_id = intval( $_REQUEST['form'] );
 
