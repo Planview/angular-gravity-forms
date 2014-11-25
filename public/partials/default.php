@@ -59,7 +59,7 @@
 
 
 endforeach; ?>
-<button class="btn btn-default" type="submit">Submit</button>
+<div class="text-center"><button type="submit" class="btn btn-lg btn-success"><?php echo $this->form['button']['text']; ?></button></div>
 </form>
 <div ng-show="showConfirm">
     <?php echo $this->get_confirmation(); ?>
