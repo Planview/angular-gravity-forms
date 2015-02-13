@@ -97,7 +97,6 @@ class Angular_Gravity_Forms_Public {
      * @since   0.0.0
      */
     public function submit_form() {
-        error_log(var_export($_REQUEST,true));
         $data = $this->prepare_form_data();
         $lead_id = GFAPI::add_entry( $data );
         $lead = RGFormsModel::get_lead( $lead_id );
@@ -143,7 +142,6 @@ class Angular_Gravity_Forms_Public {
                 }
             } else {
                 $clean = $this->clean_field( $field );
-                error_log(var_export($clean, true));
                 if ( $clean ) {
                     $cleaned_fields[ $field['id'] ] = $clean;
                 } elseif ( $this->check_array_property( 'isRequired', $field ) ) {
@@ -154,8 +152,6 @@ class Angular_Gravity_Forms_Public {
                 }
             }
         }
-
-        error_log(var_export($cleaned_fields, true));
 
         $cleaned_fields['form_id'] = $this->form['id'];
         $cleaned_fields['date_created'] = date('Y-m-d H:i');
